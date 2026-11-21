@@ -1,0 +1,558 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isSignedIn() &&
+             request.auth.token.email == 'ulrichyoufang388@gmail.com' &&
+             request.auth.token.email_verified == true;
+    }
+
+    function isValidSpecialty(s) {
+      return s is string && s in [
+        'Mécatronique',
+        'Électronique',
+        'Électrotechnique',
+        'Maintenance Après-Vente Automobile',
+        'Froid et Climatisation',
+        'Fabrication Mécanique',
+        'Génie Civil',
+        'Informatique Industrielle'
+      ];
+    }
+
+    function isValidLevel(l) {
+      return l is string && l in [
+        'Brevet de Technicien Supérieur - Niveau 1',
+        'Brevet de Technicien Supérieur - Niveau 2',
+        'Licence Professionnelle',
+        'Master Professionnel',
+        'Cycle Ingénieur'
+      ];
+    }
+
+    function isValidUserProfile(data) {
+      return data.userId is string && data.userId.size() >= 1 && data.userId.size() <= 128 &&
+             data.fullName is string && data.fullName.size() >= 1 && data.fullName.size() <= 100 &&
+             (!('email' in data) || (data.email is string && data.email.size() <= 150)) &&
+             (!('phoneNumber' in data) || (data.phoneNumber is string && data.phoneNumber.size() <= 32)) &&
+             (!('institution' in data) || (data.institution is string && data.institution.size() <= 150)) &&
+             isValidSpecialty(data.specialty) &&
+             isValidLevel(data.level) &&
+             data.xpPoints is int && data.xpPoints >= 0 && data.xpPoints <= 10000000 &&
+             data.streakDays is int && data.streakDays >= 0 && data.streakDays <= 10000 &&
+             data.totalStudyMinutes is int && data.totalStudyMinutes >= 0 && data.totalStudyMinutes <= 10000000 &&
+             data.suspended is bool &&
+             (!('fcmToken' in data) || (data.fcmToken is string && data.fcmToken.size() <= 512)) &&
+             data.updatedAtEpochMs is int && data.updatedAtEpochMs >= 0 &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidTask(data, ownerUid) {
+      return data.userId is string && data.userId == ownerUid &&
+             data.title is string && data.title.size() >= 1 && data.title.size() <= 200 &&
+             data.subject is string && data.subject.size() >= 1 && data.subject.size() <= 120 &&
+             data.category is string && data.category in ['COURS', 'TD', 'TP', 'EXAMEN'] &&
+             data.dueDateEpochMs is int && data.dueDateEpochMs >= 0 &&
+             data.priority is string && data.priority in ['HAUTE', 'MOYENNE', 'BASSE'] &&
+             data.completed is bool &&
+             data.deleted is bool &&
+             data.updatedAtEpochMs is int && data.updatedAtEpochMs >= 0 &&
+             data.syncVersion is int && data.syncVersion >= 1 &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidDeck(data, ownerUid) {
+      return data.userId is string && data.userId == ownerUid &&
+             data.title is string && data.title.size() >= 1 && data.title.size() <= 150 &&
+             data.subject is string && data.subject.size() >= 1 && data.subject.size() <= 120 &&
+             data.description is string && data.description.size() <= 400 &&
+             data.deleted is bool &&
+             data.updatedAtEpochMs is int && data.updatedAtEpochMs >= 0 &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidFlashcard(data, ownerUid) {
+      return data.userId is string && data.userId == ownerUid &&
+             data.deckId is string && isValidId(data.deckId) &&
+             data.question is string && data.question.size() >= 1 && data.question.size() <= 600 &&
+             data.answer is string && data.answer.size() >= 1 && data.answer.size() <= 1200 &&
+             data.hint is string && data.hint.size() <= 400 &&
+             data.easeFactor is number && data.easeFactor >= 1.3 && data.easeFactor <= 5.0 &&
+             data.intervalDays is int && data.intervalDays >= 0 && data.intervalDays <= 36500 &&
+             data.repetitions is int && data.repetitions >= 0 && data.repetitions <= 10000 &&
+             data.nextReviewAtEpochMs is int && data.nextReviewAtEpochMs >= 0 &&
+             data.lastReviewedAtEpochMs is int && data.lastReviewedAtEpochMs >= 0 &&
+             data.deleted is bool &&
+             data.updatedAtEpochMs is int && data.updatedAtEpochMs >= 0 &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidPomodoro(data, ownerUid) {
+      return data.userId is string && data.userId == ownerUid &&
+             data.subject is string && data.subject.size() >= 1 && data.subject.size() <= 120 &&
+             data.mode is string && data.mode in ['CLASSIQUE', 'INTENSIF', 'PERSONNALISE'] &&
+             data.focusMinutes is int && data.focusMinutes >= 1 && data.focusMinutes <= 240 &&
+             data.breakMinutes is int && data.breakMinutes >= 0 && data.breakMinutes <= 120 &&
+             data.xpEarned is int && data.xpEarned >= 0 && data.xpEarned <= 500 &&
+             data.completedAtEpochMs is int && data.completedAtEpochMs >= 0 &&
+             data.deleted is bool &&
+             data.updatedAtEpochMs is int && data.updatedAtEpochMs >= 0 &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidLeaderboard(data) {
+      return data.userId is string && data.userId.size() >= 1 && data.userId.size() <= 128 &&
+             data.initials is string && data.initials.size() >= 1 && data.initials.size() <= 4 &&
+             data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 100 &&
+             isValidSpecialty(data.specialty) &&
+             isValidLevel(data.level) &&
+             data.xpPoints is int && data.xpPoints >= 0 && data.xpPoints <= 10000000 &&
+             data.totalStudyMinutes is int && data.totalStudyMinutes >= 0 && data.totalStudyMinutes <= 10000000 &&
+             data.suspended is bool &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidInstitution(data) {
+      return data.name is string && data.name.size() >= 2 && data.name.size() <= 150 &&
+             data.city is string && data.city.size() <= 100 &&
+             data.active is bool &&
+             data.updatedAtEpochMs is int && data.updatedAtEpochMs >= 0 &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidOfficialSchedule(data) {
+      return data.title is string && data.title.size() >= 1 && data.title.size() <= 200 &&
+             data.subject is string && data.subject.size() >= 1 && data.subject.size() <= 120 &&
+             data.category is string && data.category in ['COURS', 'TD', 'TP', 'EXAMEN'] &&
+             data.dueDateEpochMs is int && data.dueDateEpochMs >= 0 &&
+             data.priority is string && data.priority in ['HAUTE', 'MOYENNE', 'BASSE'] &&
+             data.targetInstitution is string && data.targetInstitution.size() >= 1 && data.targetInstitution.size() <= 150 &&
+             data.targetLevel is string && (data.targetLevel == 'ALL' || isValidLevel(data.targetLevel)) &&
+             data.targetSpecialty is string && (data.targetSpecialty == 'ALL' || isValidSpecialty(data.targetSpecialty)) &&
+             data.roomLocation is string && data.roomLocation.size() <= 120 &&
+             data.instructor is string && data.instructor.size() <= 120 &&
+             data.authorEmail is string && data.authorEmail == 'ulrichyoufang388@gmail.com' &&
+             data.updatedAtEpochMs is int && data.updatedAtEpochMs >= 0 &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidAnnouncement(data) {
+      return data.title is string && data.title.size() >= 1 && data.title.size() <= 160 &&
+             data.body is string && data.body.size() >= 1 && data.body.size() <= 1500 &&
+             data.priority is string && data.priority in ['INFORMATION', 'IMPORTANT', 'URGENT'] &&
+             data.targetInstitution is string && data.targetInstitution.size() >= 1 && data.targetInstitution.size() <= 150 &&
+             data.targetLevel is string && (data.targetLevel == 'ALL' || isValidLevel(data.targetLevel)) &&
+             data.targetSpecialty is string && (data.targetSpecialty == 'ALL' || isValidSpecialty(data.targetSpecialty)) &&
+             data.authorEmail is string && data.authorEmail == 'ulrichyoufang388@gmail.com' &&
+             data.pinned is bool &&
+             data.archived is bool &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidSupportTicket(data) {
+      return data.userId is string && data.userId.size() >= 1 && data.userId.size() <= 128 &&
+             data.studentName is string && data.studentName.size() >= 1 && data.studentName.size() <= 100 &&
+             data.studentEmail is string && data.studentEmail.size() <= 150 &&
+             data.institution is string && data.institution.size() <= 150 &&
+             data.subject is string && data.subject.size() >= 2 && data.subject.size() <= 160 &&
+             data.message is string && data.message.size() >= 2 && data.message.size() <= 2000 &&
+             data.status is string && data.status in ['OUVERT', 'REPONDU', 'RESOLU'] &&
+             data.adminReply is string && data.adminReply.size() <= 2000 &&
+             data.createdAtEpochMs is int && data.createdAtEpochMs >= 0 &&
+             data.updatedAtEpochMs is int && data.updatedAtEpochMs >= 0 &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidAppConfig(data) {
+      return data.maintenanceMode is bool &&
+             data.maintenanceMessage is string && data.maintenanceMessage.size() <= 500 &&
+             data.registrationEnabled is bool &&
+             data.aiEnabled is bool &&
+             data.aiProvider is string && data.aiProvider in ['FIREBASE_AI_LOGIC', 'CUSTOM_PROXY'] &&
+             data.aiModelName is string && data.aiModelName in ['gemini-3.8-flash', 'gemini-3.5-flash-lite', 'gemini-4-argon'] &&
+             data.aiSystemPrompt is string && data.aiSystemPrompt.size() <= 2000 &&
+             data.aiTemperature is number && data.aiTemperature >= 0.0 && data.aiTemperature <= 2.0 &&
+             data.aiDailyLimit is int && data.aiDailyLimit >= 1 && data.aiDailyLimit <= 500 &&
+             data.customApiBaseUrl is string && data.customApiBaseUrl.size() <= 500 &&
+             data.customApiModel is string && data.customApiModel.size() <= 120 &&
+             data.hasCustomApiKey is bool &&
+             data.updatedAtEpochMs is int && data.updatedAtEpochMs >= 0 &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidAdminSecrets(data) {
+      return data.customAiApiKey is string && data.customAiApiKey.size() <= 512 &&
+             data.platformWebhookUrl is string && data.platformWebhookUrl.size() <= 500 &&
+             data.platformApiSecret is string && data.platformApiSecret.size() <= 512 &&
+             data.extraApiHeadersJson is string && data.extraApiHeadersJson.size() <= 1000 &&
+             data.updatedAtEpochMs is int && data.updatedAtEpochMs >= 0 &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidPushBroadcast(data) {
+      return data.title is string && data.title.size() >= 1 && data.title.size() <= 160 &&
+             data.body is string && data.body.size() >= 1 && data.body.size() <= 500 &&
+             data.topicType is string && data.topicType in ['GLOBAL', 'INSTITUT', 'NIVEAU', 'SPECIALITE'] &&
+             data.topicValue is string && data.topicValue.size() >= 1 && data.topicValue.size() <= 150 &&
+             data.authorEmail is string && data.authorEmail == 'ulrichyoufang388@gmail.com' &&
+             data.sentAtEpochMs is int && data.sentAtEpochMs >= 0 &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidPeerNudge(data) {
+      return data.senderUid is string && data.senderUid.size() >= 1 && data.senderUid.size() <= 128 &&
+             data.senderName is string && data.senderName.size() >= 1 && data.senderName.size() <= 100 &&
+             data.recipientUid is string && data.recipientUid.size() >= 1 && data.recipientUid.size() <= 128 &&
+             data.senderUid != data.recipientUid &&
+             isValidSpecialty(data.specialty) &&
+             data.type is string && data.type in ['REMINDER', 'ENCOURAGEMENT'] &&
+             data.message is string && data.message.size() >= 1 && data.message.size() <= 300 &&
+             data.read is bool &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    match /users/{userId} {
+      allow get: if isValidId(userId) && (isOwner(userId) || isAdmin());
+      allow list: if isAdmin();
+
+      allow create: if isValidId(userId) &&
+                       isOwner(userId) &&
+                       incoming().userId == request.auth.uid &&
+                       incoming().suspended == false &&
+                       incoming().keys().hasAll(['userId', 'fullName', 'specialty', 'level', 'xpPoints', 'streakDays', 'totalStudyMinutes', 'suspended', 'updatedAtEpochMs', 'createdAt', 'updatedAt']) &&
+                       incoming().keys().hasOnly(['userId', 'fullName', 'email', 'phoneNumber', 'institution', 'specialty', 'level', 'xpPoints', 'streakDays', 'totalStudyMinutes', 'suspended', 'fcmToken', 'updatedAtEpochMs', 'createdAt', 'updatedAt']) &&
+                       isValidUserProfile(incoming());
+
+      allow update: if isValidId(userId) &&
+                       isSignedIn() &&
+                       isValidUserProfile(incoming()) &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt && (
+                         (
+                           isOwner(userId) &&
+                           incoming().suspended == existing().suspended &&
+                           incoming().diff(existing()).affectedKeys().hasOnly(['fullName', 'email', 'phoneNumber', 'institution', 'specialty', 'level', 'xpPoints', 'streakDays', 'totalStudyMinutes', 'fcmToken', 'updatedAtEpochMs', 'updatedAt'])
+                         ) || (
+                           isAdmin() &&
+                           incoming().diff(existing()).affectedKeys().hasOnly(['xpPoints', 'suspended', 'updatedAtEpochMs', 'updatedAt'])
+                         )
+                       );
+
+      allow delete: if isValidId(userId) && (isOwner(userId) || isAdmin());
+
+      match /tasks/{taskId} {
+        allow get: if isValidId(userId) && isValidId(taskId) && (isOwner(userId) || isAdmin());
+        allow list: if isValidId(userId) && (isOwner(userId) || isAdmin());
+
+        allow create: if isValidId(userId) && isValidId(taskId) &&
+                         isOwner(userId) &&
+                         incoming().keys().hasAll(['userId', 'title', 'subject', 'category', 'dueDateEpochMs', 'priority', 'completed', 'deleted', 'updatedAtEpochMs', 'syncVersion', 'createdAt', 'updatedAt']) &&
+                         incoming().keys().hasOnly(['userId', 'title', 'subject', 'category', 'dueDateEpochMs', 'priority', 'completed', 'deleted', 'updatedAtEpochMs', 'syncVersion', 'createdAt', 'updatedAt']) &&
+                         isValidTask(incoming(), userId);
+
+        allow update: if isValidId(userId) && isValidId(taskId) &&
+                         isOwner(userId) &&
+                         isValidTask(incoming(), userId) &&
+                         incoming().userId == existing().userId &&
+                         incoming().createdAt == existing().createdAt &&
+                         incoming().diff(existing()).affectedKeys().hasOnly(['title', 'subject', 'category', 'dueDateEpochMs', 'priority', 'completed', 'deleted', 'updatedAtEpochMs', 'syncVersion', 'updatedAt']);
+
+        allow delete: if isValidId(userId) && isValidId(taskId) && (isOwner(userId) || isAdmin());
+      }
+
+      match /decks/{deckId} {
+        allow get: if isValidId(userId) && isValidId(deckId) && (isOwner(userId) || isAdmin());
+        allow list: if isValidId(userId) && (isOwner(userId) || isAdmin());
+
+        allow create: if isValidId(userId) && isValidId(deckId) &&
+                         isOwner(userId) &&
+                         incoming().keys().hasAll(['userId', 'title', 'subject', 'description', 'deleted', 'updatedAtEpochMs', 'createdAt', 'updatedAt']) &&
+                         incoming().keys().hasOnly(['userId', 'title', 'subject', 'description', 'deleted', 'updatedAtEpochMs', 'createdAt', 'updatedAt']) &&
+                         isValidDeck(incoming(), userId);
+
+        allow update: if isValidId(userId) && isValidId(deckId) &&
+                         isOwner(userId) &&
+                         isValidDeck(incoming(), userId) &&
+                         incoming().userId == existing().userId &&
+                         incoming().createdAt == existing().createdAt &&
+                         incoming().diff(existing()).affectedKeys().hasOnly(['title', 'subject', 'description', 'deleted', 'updatedAtEpochMs', 'updatedAt']);
+
+        allow delete: if isValidId(userId) && isValidId(deckId) && (isOwner(userId) || isAdmin());
+      }
+
+      match /flashcards/{cardId} {
+        allow get: if isValidId(userId) && isValidId(cardId) && (isOwner(userId) || isAdmin());
+        allow list: if isValidId(userId) && (isOwner(userId) || isAdmin());
+
+        allow create: if isValidId(userId) && isValidId(cardId) &&
+                         isOwner(userId) &&
+                         incoming().keys().hasAll(['userId', 'deckId', 'question', 'answer', 'hint', 'easeFactor', 'intervalDays', 'repetitions', 'nextReviewAtEpochMs', 'lastReviewedAtEpochMs', 'deleted', 'updatedAtEpochMs', 'createdAt', 'updatedAt']) &&
+                         incoming().keys().hasOnly(['userId', 'deckId', 'question', 'answer', 'hint', 'easeFactor', 'intervalDays', 'repetitions', 'nextReviewAtEpochMs', 'lastReviewedAtEpochMs', 'deleted', 'updatedAtEpochMs', 'createdAt', 'updatedAt']) &&
+                         isValidFlashcard(incoming(), userId);
+
+        allow update: if isValidId(userId) && isValidId(cardId) &&
+                         isOwner(userId) &&
+                         isValidFlashcard(incoming(), userId) &&
+                         incoming().userId == existing().userId &&
+                         incoming().createdAt == existing().createdAt &&
+                         incoming().diff(existing()).affectedKeys().hasOnly(['deckId', 'question', 'answer', 'hint', 'easeFactor', 'intervalDays', 'repetitions', 'nextReviewAtEpochMs', 'lastReviewedAtEpochMs', 'deleted', 'updatedAtEpochMs', 'updatedAt']);
+
+        allow delete: if isValidId(userId) && isValidId(cardId) && (isOwner(userId) || isAdmin());
+      }
+
+      match /pomodoros/{sessionId} {
+        allow get: if isValidId(userId) && isValidId(sessionId) && (isOwner(userId) || isAdmin());
+        allow list: if isValidId(userId) && (isOwner(userId) || isAdmin());
+
+        allow create: if isValidId(userId) && isValidId(sessionId) &&
+                         isOwner(userId) &&
+                         incoming().keys().hasAll(['userId', 'subject', 'mode', 'focusMinutes', 'breakMinutes', 'xpEarned', 'completedAtEpochMs', 'deleted', 'updatedAtEpochMs', 'createdAt', 'updatedAt']) &&
+                         incoming().keys().hasOnly(['userId', 'subject', 'mode', 'focusMinutes', 'breakMinutes', 'xpEarned', 'completedAtEpochMs', 'deleted', 'updatedAtEpochMs', 'createdAt', 'updatedAt']) &&
+                         isValidPomodoro(incoming(), userId);
+
+        allow update: if isValidId(userId) && isValidId(sessionId) &&
+                         isOwner(userId) &&
+                         isValidPomodoro(incoming(), userId) &&
+                         incoming().userId == existing().userId &&
+                         incoming().createdAt == existing().createdAt &&
+                         incoming().diff(existing()).affectedKeys().hasOnly(['deleted', 'updatedAtEpochMs', 'updatedAt']);
+
+        allow delete: if isValidId(userId) && isValidId(sessionId) && (isOwner(userId) || isAdmin());
+      }
+    }
+
+    match /leaderboard/{userId} {
+      allow get: if isValidId(userId) && isSignedIn();
+      allow list: if isSignedIn();
+
+      allow create: if isValidId(userId) &&
+                       isOwner(userId) &&
+                       incoming().userId == request.auth.uid &&
+                       incoming().suspended == false &&
+                       incoming().keys().hasAll(['userId', 'initials', 'displayName', 'specialty', 'level', 'xpPoints', 'totalStudyMinutes', 'suspended', 'createdAt', 'updatedAt']) &&
+                       incoming().keys().hasOnly(['userId', 'initials', 'displayName', 'specialty', 'level', 'xpPoints', 'totalStudyMinutes', 'suspended', 'createdAt', 'updatedAt']) &&
+                       isValidLeaderboard(incoming());
+
+      allow update: if isValidId(userId) &&
+                       isSignedIn() &&
+                       isValidLeaderboard(incoming()) &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt && (
+                         (
+                           isOwner(userId) &&
+                           incoming().suspended == existing().suspended &&
+                           incoming().diff(existing()).affectedKeys().hasOnly(['initials', 'displayName', 'specialty', 'level', 'xpPoints', 'totalStudyMinutes', 'updatedAt'])
+                         ) || (
+                           isAdmin() &&
+                           incoming().diff(existing()).affectedKeys().hasOnly(['xpPoints', 'suspended', 'updatedAt'])
+                         )
+                       );
+
+      allow delete: if isValidId(userId) && (isOwner(userId) || isAdmin());
+    }
+
+    match /institutions/{institutionId} {
+      allow get: if isValidId(institutionId) && isSignedIn();
+      allow list: if isSignedIn();
+
+      allow create: if isValidId(institutionId) &&
+                       isAdmin() &&
+                       incoming().keys().hasAll(['name', 'city', 'active', 'updatedAtEpochMs', 'createdAt', 'updatedAt']) &&
+                       incoming().keys().hasOnly(['name', 'city', 'active', 'updatedAtEpochMs', 'createdAt', 'updatedAt']) &&
+                       isValidInstitution(incoming());
+
+      allow update: if isValidId(institutionId) &&
+                       isAdmin() &&
+                       isValidInstitution(incoming()) &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().diff(existing()).affectedKeys().hasOnly(['name', 'city', 'active', 'updatedAtEpochMs', 'updatedAt']);
+
+      allow delete: if isValidId(institutionId) && isAdmin();
+    }
+
+    match /official_schedules/{scheduleId} {
+      allow get: if isValidId(scheduleId) && isSignedIn();
+      allow list: if isSignedIn();
+
+      allow create: if isValidId(scheduleId) &&
+                       isAdmin() &&
+                       incoming().keys().hasAll(['title', 'subject', 'category', 'dueDateEpochMs', 'priority', 'targetInstitution', 'targetLevel', 'targetSpecialty', 'roomLocation', 'instructor', 'authorEmail', 'updatedAtEpochMs', 'createdAt', 'updatedAt']) &&
+                       incoming().keys().hasOnly(['title', 'subject', 'category', 'dueDateEpochMs', 'priority', 'targetInstitution', 'targetLevel', 'targetSpecialty', 'roomLocation', 'instructor', 'authorEmail', 'updatedAtEpochMs', 'createdAt', 'updatedAt']) &&
+                       isValidOfficialSchedule(incoming());
+
+      allow update: if isValidId(scheduleId) &&
+                       isAdmin() &&
+                       isValidOfficialSchedule(incoming()) &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().diff(existing()).affectedKeys().hasOnly(['title', 'subject', 'category', 'dueDateEpochMs', 'priority', 'targetInstitution', 'targetLevel', 'targetSpecialty', 'roomLocation', 'instructor', 'updatedAtEpochMs', 'updatedAt']);
+
+      allow delete: if isValidId(scheduleId) && isAdmin();
+    }
+
+    match /announcements/{announcementId} {
+      allow get: if isValidId(announcementId) && isSignedIn();
+      allow list: if isSignedIn();
+
+      allow create: if isValidId(announcementId) &&
+                       isAdmin() &&
+                       incoming().keys().hasAll(['title', 'body', 'priority', 'targetInstitution', 'targetLevel', 'targetSpecialty', 'authorEmail', 'pinned', 'archived', 'createdAt', 'updatedAt']) &&
+                       incoming().keys().hasOnly(['title', 'body', 'priority', 'targetInstitution', 'targetLevel', 'targetSpecialty', 'authorEmail', 'pinned', 'archived', 'createdAt', 'updatedAt']) &&
+                       isValidAnnouncement(incoming());
+
+      allow update: if isValidId(announcementId) &&
+                       isAdmin() &&
+                       isValidAnnouncement(incoming()) &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().diff(existing()).affectedKeys().hasOnly(['title', 'body', 'priority', 'targetInstitution', 'targetLevel', 'targetSpecialty', 'pinned', 'archived', 'updatedAt']);
+
+      allow delete: if isValidId(announcementId) && isAdmin();
+    }
+
+    match /support_tickets/{ticketId} {
+      allow get: if isValidId(ticketId) && isSignedIn() && (existing().userId == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+
+      allow create: if isValidId(ticketId) &&
+                       isSignedIn() &&
+                       incoming().userId == request.auth.uid &&
+                       incoming().status == 'OUVERT' &&
+                       incoming().adminReply == '' &&
+                       incoming().keys().hasAll(['userId', 'studentName', 'studentEmail', 'institution', 'subject', 'message', 'status', 'adminReply', 'createdAtEpochMs', 'updatedAtEpochMs', 'createdAt', 'updatedAt']) &&
+                       incoming().keys().hasOnly(['userId', 'studentName', 'studentEmail', 'institution', 'subject', 'message', 'status', 'adminReply', 'createdAtEpochMs', 'updatedAtEpochMs', 'createdAt', 'updatedAt']) &&
+                       isValidSupportTicket(incoming());
+
+      allow update: if isValidId(ticketId) &&
+                       isSignedIn() &&
+                       isValidSupportTicket(incoming()) &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt && (
+                         (
+                           isAdmin() &&
+                           incoming().diff(existing()).affectedKeys().hasOnly(['status', 'adminReply', 'updatedAtEpochMs', 'updatedAt'])
+                         ) || (
+                           existing().userId == request.auth.uid &&
+                           incoming().status == 'RESOLU' &&
+                           incoming().adminReply == existing().adminReply &&
+                           incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAtEpochMs', 'updatedAt'])
+                         )
+                       );
+
+      allow delete: if isValidId(ticketId) && (isAdmin() || (isSignedIn() && existing().userId == request.auth.uid));
+    }
+
+    match /app_config/{configId} {
+      allow get: if isValidId(configId) && isSignedIn();
+      allow list: if isSignedIn();
+
+      allow create: if isValidId(configId) &&
+                       isAdmin() &&
+                       incoming().keys().hasAll(['maintenanceMode', 'maintenanceMessage', 'registrationEnabled', 'aiEnabled', 'aiProvider', 'aiModelName', 'aiSystemPrompt', 'aiTemperature', 'aiDailyLimit', 'customApiBaseUrl', 'customApiModel', 'hasCustomApiKey', 'updatedAtEpochMs', 'createdAt', 'updatedAt']) &&
+                       incoming().keys().hasOnly(['maintenanceMode', 'maintenanceMessage', 'registrationEnabled', 'aiEnabled', 'aiProvider', 'aiModelName', 'aiSystemPrompt', 'aiTemperature', 'aiDailyLimit', 'customApiBaseUrl', 'customApiModel', 'hasCustomApiKey', 'updatedAtEpochMs', 'createdAt', 'updatedAt']) &&
+                       isValidAppConfig(incoming());
+
+      allow update: if isValidId(configId) &&
+                       isAdmin() &&
+                       isValidAppConfig(incoming()) &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().diff(existing()).affectedKeys().hasOnly(['maintenanceMode', 'maintenanceMessage', 'registrationEnabled', 'aiEnabled', 'aiProvider', 'aiModelName', 'aiSystemPrompt', 'aiTemperature', 'aiDailyLimit', 'customApiBaseUrl', 'customApiModel', 'hasCustomApiKey', 'updatedAtEpochMs', 'updatedAt']);
+
+      allow delete: if isValidId(configId) && isAdmin();
+    }
+
+    match /admin_secrets/{secretId} {
+      allow get: if isValidId(secretId) && isAdmin();
+      allow list: if isAdmin();
+
+      allow create: if isValidId(secretId) &&
+                       isAdmin() &&
+                       incoming().keys().hasAll(['customAiApiKey', 'platformWebhookUrl', 'platformApiSecret', 'extraApiHeadersJson', 'updatedAtEpochMs', 'createdAt', 'updatedAt']) &&
+                       incoming().keys().hasOnly(['customAiApiKey', 'platformWebhookUrl', 'platformApiSecret', 'extraApiHeadersJson', 'updatedAtEpochMs', 'createdAt', 'updatedAt']) &&
+                       isValidAdminSecrets(incoming());
+
+      allow update: if isValidId(secretId) &&
+                       isAdmin() &&
+                       isValidAdminSecrets(incoming()) &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().diff(existing()).affectedKeys().hasOnly(['customAiApiKey', 'platformWebhookUrl', 'platformApiSecret', 'extraApiHeadersJson', 'updatedAtEpochMs', 'updatedAt']);
+
+      allow delete: if isValidId(secretId) && isAdmin();
+    }
+
+    match /push_broadcasts/{broadcastId} {
+      allow get: if isValidId(broadcastId) && isSignedIn();
+      allow list: if isSignedIn();
+
+      allow create: if isValidId(broadcastId) &&
+                       isAdmin() &&
+                       incoming().keys().hasAll(['title', 'body', 'topicType', 'topicValue', 'authorEmail', 'sentAtEpochMs', 'createdAt', 'updatedAt']) &&
+                       incoming().keys().hasOnly(['title', 'body', 'topicType', 'topicValue', 'authorEmail', 'sentAtEpochMs', 'createdAt', 'updatedAt']) &&
+                       isValidPushBroadcast(incoming());
+
+      allow update: if false;
+      allow delete: if isValidId(broadcastId) && isAdmin();
+    }
+
+    match /peer_nudges/{nudgeId} {
+      allow get: if isValidId(nudgeId) && isSignedIn() && (existing().recipientUid == request.auth.uid || existing().senderUid == request.auth.uid);
+      allow list: if isSignedIn() && (resource.data.recipientUid == request.auth.uid || resource.data.senderUid == request.auth.uid);
+
+      allow create: if isValidId(nudgeId) &&
+                       isSignedIn() &&
+                       incoming().senderUid == request.auth.uid &&
+                       incoming().read == false &&
+                       incoming().keys().hasAll(['senderUid', 'senderName', 'recipientUid', 'specialty', 'type', 'message', 'read', 'createdAt', 'updatedAt']) &&
+                       incoming().keys().hasOnly(['senderUid', 'senderName', 'recipientUid', 'specialty', 'type', 'message', 'read', 'createdAt', 'updatedAt']) &&
+                       isValidPeerNudge(incoming());
+
+      allow update: if isValidId(nudgeId) &&
+                       isSignedIn() &&
+                       existing().recipientUid == request.auth.uid &&
+                       isValidPeerNudge(incoming()) &&
+                       incoming().senderUid == existing().senderUid &&
+                       incoming().recipientUid == existing().recipientUid &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().diff(existing()).affectedKeys().hasOnly(['read', 'updatedAt']);
+
+      allow delete: if isValidId(nudgeId) && isSignedIn() && (existing().recipientUid == request.auth.uid || existing().senderUid == request.auth.uid || isAdmin());
+    }
+  }
+}

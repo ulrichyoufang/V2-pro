@@ -1,0 +1,6 @@
+{
+  "name": "YFUA",
+  "description": "Application éducative hybride hors-ligne/en-ligne (Planning, Pomodoro, Flashcards SM-2, Classement et Sauvegarde Drive)",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

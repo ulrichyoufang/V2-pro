@@ -1,0 +1,326 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Profil académique de l'étudiant et progression synchronisée",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "fullName": { "type": "string" },
+        "email": { "type": "string" },
+        "phoneNumber": { "type": "string" },
+        "institution": { "type": "string" },
+        "specialty": { "type": "string" },
+        "level": { "type": "string" },
+        "xpPoints": { "type": "integer" },
+        "streakDays": { "type": "integer" },
+        "totalStudyMinutes": { "type": "integer" },
+        "suspended": { "type": "boolean" },
+        "fcmToken": { "type": "string" },
+        "updatedAtEpochMs": { "type": "integer" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "fullName", "specialty", "level", "xpPoints", "streakDays", "totalStudyMinutes", "suspended", "updatedAtEpochMs", "createdAt", "updatedAt"]
+    },
+    "Task": {
+      "title": "Task",
+      "description": "Tâche personnelle de l'étudiant",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "subject": { "type": "string" },
+        "category": { "type": "string", "enum": ["COURS", "TD", "TP", "EXAMEN"] },
+        "dueDateEpochMs": { "type": "integer" },
+        "priority": { "type": "string", "enum": ["HAUTE", "MOYENNE", "BASSE"] },
+        "completed": { "type": "boolean" },
+        "deleted": { "type": "boolean" },
+        "updatedAtEpochMs": { "type": "integer" },
+        "syncVersion": { "type": "integer" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "title", "subject", "category", "dueDateEpochMs", "priority", "completed", "deleted", "updatedAtEpochMs", "syncVersion", "createdAt", "updatedAt"]
+    },
+    "FlashcardDeck": {
+      "title": "FlashcardDeck",
+      "description": "Paquet de flashcards SM-2",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "subject": { "type": "string" },
+        "description": { "type": "string" },
+        "deleted": { "type": "boolean" },
+        "updatedAtEpochMs": { "type": "integer" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "title", "subject", "description", "deleted", "updatedAtEpochMs", "createdAt", "updatedAt"]
+    },
+    "Flashcard": {
+      "title": "Flashcard",
+      "description": "Fiche SM-2",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "deckId": { "type": "string" },
+        "question": { "type": "string" },
+        "answer": { "type": "string" },
+        "hint": { "type": "string" },
+        "easeFactor": { "type": "number" },
+        "intervalDays": { "type": "integer" },
+        "repetitions": { "type": "integer" },
+        "nextReviewAtEpochMs": { "type": "integer" },
+        "lastReviewedAtEpochMs": { "type": "integer" },
+        "deleted": { "type": "boolean" },
+        "updatedAtEpochMs": { "type": "integer" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "deckId", "question", "answer", "hint", "easeFactor", "intervalDays", "repetitions", "nextReviewAtEpochMs", "lastReviewedAtEpochMs", "deleted", "updatedAtEpochMs", "createdAt", "updatedAt"]
+    },
+    "PomodoroSession": {
+      "title": "PomodoroSession",
+      "description": "Session Pomodoro complétée",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "subject": { "type": "string" },
+        "mode": { "type": "string" },
+        "focusMinutes": { "type": "integer" },
+        "breakMinutes": { "type": "integer" },
+        "xpEarned": { "type": "integer" },
+        "completedAtEpochMs": { "type": "integer" },
+        "deleted": { "type": "boolean" },
+        "updatedAtEpochMs": { "type": "integer" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "subject", "mode", "focusMinutes", "breakMinutes", "xpEarned", "completedAtEpochMs", "deleted", "updatedAtEpochMs", "createdAt", "updatedAt"]
+    },
+    "LeaderboardEntry": {
+      "title": "LeaderboardEntry",
+      "description": "Entrée publique du classement (sans PII)",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "initials": { "type": "string" },
+        "displayName": { "type": "string" },
+        "specialty": { "type": "string" },
+        "level": { "type": "string" },
+        "xpPoints": { "type": "integer" },
+        "totalStudyMinutes": { "type": "integer" },
+        "suspended": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "initials", "displayName", "specialty", "level", "xpPoints", "totalStudyMinutes", "suspended", "createdAt", "updatedAt"]
+    },
+    "Institution": {
+      "title": "Institution",
+      "description": "Établissement universitaire géré dynamiquement",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "city": { "type": "string" },
+        "active": { "type": "boolean" },
+        "updatedAtEpochMs": { "type": "integer" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "city", "active", "updatedAtEpochMs", "createdAt", "updatedAt"]
+    },
+    "OfficialSchedule": {
+      "title": "OfficialSchedule",
+      "description": "Emploi du temps officiel ou date d'examen publiés par l'administration",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "subject": { "type": "string" },
+        "category": { "type": "string", "enum": ["COURS", "TD", "TP", "EXAMEN"] },
+        "dueDateEpochMs": { "type": "integer" },
+        "priority": { "type": "string", "enum": ["HAUTE", "MOYENNE", "BASSE"] },
+        "targetInstitution": { "type": "string" },
+        "targetLevel": { "type": "string" },
+        "targetSpecialty": { "type": "string" },
+        "roomLocation": { "type": "string" },
+        "instructor": { "type": "string" },
+        "authorEmail": { "type": "string" },
+        "updatedAtEpochMs": { "type": "integer" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "subject", "category", "dueDateEpochMs", "priority", "targetInstitution", "targetLevel", "targetSpecialty", "roomLocation", "instructor", "authorEmail", "updatedAtEpochMs", "createdAt", "updatedAt"]
+    },
+    "OfficialAnnouncement": {
+      "title": "OfficialAnnouncement",
+      "description": "Communiqué officiel publié par le Super-Administrateur",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "body": { "type": "string" },
+        "priority": { "type": "string", "enum": ["INFORMATION", "IMPORTANT", "URGENT"] },
+        "targetInstitution": { "type": "string" },
+        "targetLevel": { "type": "string" },
+        "targetSpecialty": { "type": "string" },
+        "authorEmail": { "type": "string" },
+        "pinned": { "type": "boolean" },
+        "archived": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "body", "priority", "targetInstitution", "targetLevel", "targetSpecialty", "authorEmail", "pinned", "archived", "createdAt", "updatedAt"]
+    },
+    "SupportTicket": {
+      "title": "SupportTicket",
+      "description": "Ticket de support étudiant et réponse administrateur",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "studentName": { "type": "string" },
+        "studentEmail": { "type": "string" },
+        "institution": { "type": "string" },
+        "subject": { "type": "string" },
+        "message": { "type": "string" },
+        "status": { "type": "string", "enum": ["OUVERT", "REPONDU", "RESOLU"] },
+        "adminReply": { "type": "string" },
+        "createdAtEpochMs": { "type": "integer" },
+        "updatedAtEpochMs": { "type": "integer" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "studentName", "studentEmail", "institution", "subject", "message", "status", "adminReply", "createdAtEpochMs", "updatedAtEpochMs", "createdAt", "updatedAt"]
+    },
+    "AppConfig": {
+      "title": "AppConfig",
+      "description": "Paramètres globaux de plateforme et de l'Assistant IA contrôlés par le Super-Administrateur",
+      "type": "object",
+      "properties": {
+        "maintenanceMode": { "type": "boolean" },
+        "maintenanceMessage": { "type": "string" },
+        "registrationEnabled": { "type": "boolean" },
+        "aiEnabled": { "type": "boolean" },
+        "aiProvider": { "type": "string", "enum": ["FIREBASE_AI_LOGIC", "CUSTOM_PROXY"] },
+        "aiModelName": { "type": "string", "enum": ["gemini-3.8-flash", "gemini-3.5-flash-lite", "gemini-4-argon"] },
+        "aiSystemPrompt": { "type": "string" },
+        "aiTemperature": { "type": "number" },
+        "aiDailyLimit": { "type": "integer" },
+        "customApiBaseUrl": { "type": "string" },
+        "customApiModel": { "type": "string" },
+        "hasCustomApiKey": { "type": "boolean" },
+        "updatedAtEpochMs": { "type": "integer" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["maintenanceMode", "maintenanceMessage", "registrationEnabled", "aiEnabled", "aiProvider", "aiModelName", "aiSystemPrompt", "aiTemperature", "aiDailyLimit", "customApiBaseUrl", "customApiModel", "hasCustomApiKey", "updatedAtEpochMs", "createdAt", "updatedAt"]
+    },
+    "AdminSecrets": {
+      "title": "AdminSecrets",
+      "description": "Clés API privées, webhooks et secrets plateforme strictement réservés au Super-Administrateur",
+      "type": "object",
+      "properties": {
+        "customAiApiKey": { "type": "string" },
+        "platformWebhookUrl": { "type": "string" },
+        "platformApiSecret": { "type": "string" },
+        "extraApiHeadersJson": { "type": "string" },
+        "updatedAtEpochMs": { "type": "integer" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["customAiApiKey", "platformWebhookUrl", "platformApiSecret", "extraApiHeadersJson", "updatedAtEpochMs", "createdAt", "updatedAt"]
+    },
+    "PushBroadcast": {
+      "title": "PushBroadcast",
+      "description": "Historique et diffusion FCM ciblée par topic",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "body": { "type": "string" },
+        "topicType": { "type": "string", "enum": ["GLOBAL", "INSTITUT", "NIVEAU", "SPECIALITE"] },
+        "topicValue": { "type": "string" },
+        "authorEmail": { "type": "string" },
+        "sentAtEpochMs": { "type": "integer" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "body", "topicType", "topicValue", "authorEmail", "sentAtEpochMs", "createdAt", "updatedAt"]
+    },
+    "PeerNudge": {
+      "title": "PeerNudge",
+      "description": "Rappel d'étude ou encouragement entre camarades de filière",
+      "type": "object",
+      "properties": {
+        "senderUid": { "type": "string" },
+        "senderName": { "type": "string" },
+        "recipientUid": { "type": "string" },
+        "specialty": { "type": "string" },
+        "type": { "type": "string", "enum": ["REMINDER", "ENCOURAGEMENT"] },
+        "message": { "type": "string" },
+        "read": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["senderUid", "senderName", "recipientUid", "specialty", "type", "message", "read", "createdAt", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "Profil privé de l'étudiant et métadonnées de compte"
+    },
+    "/users/{userId}/tasks/{taskId}": {
+      "schema": { "$ref": "#/entities/Task" },
+      "description": "Tâches personnelles synchronisées"
+    },
+    "/users/{userId}/decks/{deckId}": {
+      "schema": { "$ref": "#/entities/FlashcardDeck" },
+      "description": "Paquets de flashcards synchronisés"
+    },
+    "/users/{userId}/flashcards/{cardId}": {
+      "schema": { "$ref": "#/entities/Flashcard" },
+      "description": "Flashcards SM-2 synchronisées"
+    },
+    "/users/{userId}/pomodoros/{sessionId}": {
+      "schema": { "$ref": "#/entities/PomodoroSession" },
+      "description": "Historique Pomodoro synchronisé"
+    },
+    "/leaderboard/{userId}": {
+      "schema": { "$ref": "#/entities/LeaderboardEntry" },
+      "description": "Classement général et par filière"
+    },
+    "/institutions/{institutionId}": {
+      "schema": { "$ref": "#/entities/Institution" },
+      "description": "Répertoire dynamique des établissements"
+    },
+    "/official_schedules/{scheduleId}": {
+      "schema": { "$ref": "#/entities/OfficialSchedule" },
+      "description": "Emplois du temps et examens officiels publiés par le Super-Administrateur"
+    },
+    "/announcements/{announcementId}": {
+      "schema": { "$ref": "#/entities/OfficialAnnouncement" },
+      "description": "Communiqués officiels diffusés par le Super-Administrateur"
+    },
+    "/support_tickets/{ticketId}": {
+      "schema": { "$ref": "#/entities/SupportTicket" },
+      "description": "Tickets de support étudiants et réponses administrateur"
+    },
+    "/app_config/{configId}": {
+      "schema": { "$ref": "#/entities/AppConfig" },
+      "description": "Configuration globale de la plateforme et paramètres publics IA"
+    },
+    "/admin_secrets/{secretId}": {
+      "schema": { "$ref": "#/entities/AdminSecrets" },
+      "description": "Clés API et webhooks plateforme strictement réservés au Super-Administrateur"
+    },
+    "/push_broadcasts/{broadcastId}": {
+      "schema": { "$ref": "#/entities/PushBroadcast" },
+      "description": "Diffusions push ciblées par topic FCM"
+    },
+    "/peer_nudges/{nudgeId}": {
+      "schema": { "$ref": "#/entities/PeerNudge" },
+      "description": "Rappels et encouragements entre étudiants"
+    }
+  }
+}

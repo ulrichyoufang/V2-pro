@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">YFUA</string>
+    <string name="notif_channel_study_name">Rappels d\'étude et examens</string>
+    <string name="notif_channel_study_desc">Alertes planifiées pour vos examens et sessions quotidiennes YFUA</string>
+    <string name="notif_channel_peer_name">Entraide et annonces</string>
+    <string name="notif_channel_peer_desc">Encouragements de camarades et annonces officielles YFUA</string>
+    <string name="sync_status_offline">Mode Hors-ligne</string>
+    <string name="sync_status_online">Connecté</string>
+</resources>
